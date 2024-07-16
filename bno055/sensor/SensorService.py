@@ -64,6 +64,8 @@ class SensorService:
         self.srv = self.node.create_service(Trigger, prefix + 'calibration_request', self.calibration_request_callback)
 
     def configure(self):
+        self.reset_imu() # Add by sora1201.
+
         """Configure the IMU sensor hardware."""
         self.node.get_logger().info('Configuring device...')
         try:
@@ -91,6 +93,7 @@ class SensorService:
             self.node.get_logger().warn('Unable to start IMU.')
 
         if not (self.con.transmit(registers.BNO055_UNIT_SEL_ADDR, 1, bytes([0x83]))):
+        # if not (self.con.transmit(registers.BNO055_UNIT_SEL_ADDR, 1, bytes([0x06]))): # ros_imu_bno055 package (ROS1 ver.) transmit [0x06] to BNO055_UNIT_SEL_ADDR. But bno055 (ROS 2, this package) uses [0x83] instead of [0x06] for some reason. (by sora1201)
             self.node.get_logger().warn('Unable to set IMU units.')
 
         # The sensor placement configuration (Axis remapping) defines the
@@ -136,6 +139,11 @@ class SensorService:
             self.node.get_logger().warn('Unable to set IMU operation mode into operation mode.')
 
         self.node.get_logger().info('Bosch BNO055 IMU configuration complete.')
+
+        # Show data of BNO055_SYS_STAT_ADDR and BNO055_SYS_ERR_ADDR (by sora1201)
+        # self.node.get_logger().info('Get status: %s' % self.con.receive(registers.BNO055_SYS_STAT_ADDR, 1))
+        # self.node.get_logger().info('Get error: %s' % self.con.receive(registers.BNO055_SYS_ERR_ADDR, 1))
+
 
     def get_sensor_data(self):
         """Read IMU data from the sensor, parse and publish."""
@@ -414,3 +422,24 @@ class SensorService:
 
     def unpackBytesToFloat(self, start, end):
         return float(struct.unpack('h', struct.pack('BB', start, end))[0])
+
+    def reset_imu(self): # Add reset imu function. But This doesn't work for some reason that I don't know when "set_offsets" parameter is true. (by sora1201)
+        try:
+            self.con.transmit(registers.BNO055_SYS_TRIGGER_ADDR, 1, bytes([0x20]))
+            self.node.get_logger().info('Succeeded to transmit of reset')
+        except:
+            self.node.get_logger().warn('Failed to transmit of reset')
+
+        data = []
+        while True:
+            try:
+                data = self.con.receive(registers.BNO055_CHIP_ID_ADDR, 1)
+                if data[0] == registers.BNO055_ID:
+                    self.node.get_logger().info('Succeeded to receive of reset: %s' % data)
+                    break
+                self.node.get_logger().warn('Failed to receive of reset, ID: %s' % data)
+            except:
+                self.node.get_logger().warn('Resetting..., ID: %s' % data)
+                sleep(0.1)
+
+        self.node.get_logger().info('IMU successfully reset')
