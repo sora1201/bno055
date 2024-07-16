@@ -101,6 +101,9 @@ class NodeParameters:
         node.declare_parameter('variance_orientation', value=registers.DEFAULT_VARIANCE_ORIENTATION)
         node.declare_parameter('variance_mag', value=registers.DEFAULT_VARIANCE_MAG)
 
+        # If true, topic includes gravitational acceleration
+        node.declare_parameter('include_grav', value=False) # Additional parameter
+
         # get the parameters - requires CLI arguments '--ros-args --params-file <parameter file>'
         node.get_logger().info('Parameters set to:')
 
@@ -186,6 +189,10 @@ class NodeParameters:
             node.get_logger().info('\tvariance_orientation:\t"%s"' % self.variance_orientation.value)
             self.variance_mag = node.get_parameter('variance_mag')
             node.get_logger().info('\tvariance_mag:\t\t"%s"' % self.variance_mag.value)
+
+            self.include_grav = node.get_parameter('include_grav') # Additional parameter
+            node.get_logger().info('\tinclude_grav:\t\t"%s"' % self.include_grav.value)
+
         except Exception as e:  # noqa: B902
             node.get_logger().warn('Could not get parameters...setting variables to default')
             node.get_logger().warn('Error: "%s"' % e)

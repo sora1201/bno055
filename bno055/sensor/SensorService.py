@@ -207,19 +207,25 @@ class SensorService:
 
         imu_msg.orientation_covariance = imu_raw_msg.orientation_covariance
 
-        imu_msg.linear_acceleration.x = \
-            self.unpackBytesToFloat(buf[32], buf[33]) / self.param.acc_factor.value
-        imu_msg.linear_acceleration.y = \
-            self.unpackBytesToFloat(buf[34], buf[35]) / self.param.acc_factor.value
-        imu_msg.linear_acceleration.z = \
-            self.unpackBytesToFloat(buf[36], buf[37]) / self.param.acc_factor.value
+        if self.param.include_grav.value == False:
+            imu_msg.linear_acceleration.x = \
+                self.unpackBytesToFloat(buf[32], buf[33]) / self.param.acc_factor.value
+            imu_msg.linear_acceleration.y = \
+                self.unpackBytesToFloat(buf[34], buf[35]) / self.param.acc_factor.value
+            imu_msg.linear_acceleration.z = \
+                self.unpackBytesToFloat(buf[36], buf[37]) / self.param.acc_factor.value
+            imu_msg.angular_velocity.x = \
+                self.unpackBytesToFloat(buf[12], buf[13]) / self.param.gyr_factor.value
+            imu_msg.angular_velocity.y = \
+                self.unpackBytesToFloat(buf[14], buf[15]) / self.param.gyr_factor.value
+            imu_msg.angular_velocity.z = \
+                self.unpackBytesToFloat(buf[16], buf[17]) / self.param.gyr_factor.value
+        elif self.param.include_grav.value == True:
+            imu_msg.linear_acceleration.x = imu_raw_msg.linear_acceleration.x
+            imu_msg.linear_acceleration.y = imu_raw_msg.linear_acceleration.y
+            imu_msg.linear_acceleration.z = 9.8
+            imu_msg.angular_velocity = imu_raw_msg.angular_velocity
         imu_msg.linear_acceleration_covariance = imu_raw_msg.linear_acceleration_covariance
-        imu_msg.angular_velocity.x = \
-            self.unpackBytesToFloat(buf[12], buf[13]) / self.param.gyr_factor.value
-        imu_msg.angular_velocity.y = \
-            self.unpackBytesToFloat(buf[14], buf[15]) / self.param.gyr_factor.value
-        imu_msg.angular_velocity.z = \
-            self.unpackBytesToFloat(buf[16], buf[17]) / self.param.gyr_factor.value
         imu_msg.angular_velocity_covariance = imu_raw_msg.angular_velocity_covariance
         self.pub_imu.publish(imu_msg)
 
